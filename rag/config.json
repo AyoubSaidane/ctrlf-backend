@@ -1,0 +1,16 @@
+{
+    "prompts":{
+        "router_prompt": {
+            "template": "Some choices are given below. It is provided in a numbered list (1 to {num_choices}), where each item in the list corresponds to a summary.\n---------------------\n{context_list}\n---------------------\nUsing only the choices above and not prior knowledge, return the top choices (no more than {max_outputs}, but only select what is needed) that are most relevant to the question: '{query_str}'\n"
+        },
+        "doc_metadata_extra": {
+            "text": "Each document represents a PPT, PDF or Doc presentation produced by a consulting group\n"
+        },
+        "tool_descriptions": {
+            "doc_query_engine": "Synthesizes an answer to your question by feeding in an entire relevant document as context. Best used for higher-level summarization options.\nDo NOT use if answer can be found in a specific chunk of a given document. Use the chunk_query_engine instead for that purpose.\n\nBelow we give details on the format of each document:\n{doc_metadata_extra}\n",
+            "chunk_query_engine": "Synthesizes an answer to your question by feeding in a relevant chunk as context. Best used for questions that are more pointed in nature.\nDo NOT use if the question asks seems to require a general summary of any given document. Use the doc_query_engine instead for that purpose.\n\nBelow we give details on the format of each document:\n{doc_metadata_extra}\n"
+        }
+    },
+
+    "models":{}
+}

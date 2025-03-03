@@ -1,0 +1,13 @@
+llama-index 
+llama-cloud-services
+python-dotenv
+supabase
+llama-index-vector-stores-supabase
+ipython
+llama-index.llms.gemini
+fastapi
+uvicorn
+
+google-auth-oauthlib
+google-api-python-client
+google-auth-httplib2

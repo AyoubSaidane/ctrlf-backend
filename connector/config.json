@@ -1,0 +1,31 @@
+{
+    "drive_api": {
+        "fields": [
+                "id",
+                "name",
+                "mimeType",
+                "size", 
+                "parents",
+                "owners",
+                "createdTime",
+                "modifiedTime",
+                "webViewLink",
+                "webContentLink",
+                "iconLink",
+                "fileExtension"
+        ],
+        "extension": {
+            "pdf": "application/pdf",
+            "doc": "application/vnd.google-apps.document",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "ppt": "application/vnd.google-apps.presentation",
+            "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "xls": "application/vnd.google-apps.spreadsheet",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "gif": "image/gif"
+        }
+    }
+}
