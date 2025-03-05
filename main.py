@@ -35,13 +35,13 @@ async def connection_endpoint():
     counter = 0
     try:
         # connect to Google Drive and parse files
-        connecter = GoogleDriveConnecter(['pdf', 'pptx', 'docx'])
+        connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
         files = connecter.list_files()
         parser = Parser()
         global all_data
         all_data = []
         for file in files:
-            data = connecter.get_file(files, file)
+            data = connecter.fetch_file_data(files, file)
             file_chunks = parser.parse_bytes_io(data)
             all_data.extend(file_chunks)
         global index

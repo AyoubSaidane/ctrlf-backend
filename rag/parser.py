@@ -71,19 +71,37 @@ class Parser:
         Parse a document from a BytesIO object
         
         Args:
-            bytes_io_content (io.BytesIO): The document content as BytesIO
-            filename (str): Original filename to determine the file extension
+            data (dict): Dictionary containing 'content' (BytesIO) and 'metadata'
         
         Returns:
             List of chunks from the parsed document
         """
-        # Create a temporary file with the content
+        # Extract content and metadata
         bytes_io_content = data['content']
         cloud_metadata = data['metadata']
         file_name = cloud_metadata['file_name']
-        file_extension = os.path.splitext(file_name)[1]
+        file_type = cloud_metadata['file_type']
+        
+        # Determine appropriate file extension
+        if file_type.startswith('application/vnd.google-apps.'):
+            # For Google Workspace files, use .pdf since they're exported as PDF
+            file_extension = '.pdf'
+            temp_file_name = f"{os.path.splitext(file_name)[0]}.pdf"
+        else:
+            # For regular files, use the original extension
+            file_extension = os.path.splitext(file_name)[1]
+            temp_file_name = file_name
+            
+            # If extension is unusual or not supported, default to PDF
+            supported_extensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.html', '.xlsx', '.xls', '.csv']
+            if not file_extension or file_extension not in supported_extensions:
+                print(f"Warning: Unusual file extension '{file_extension}' for file '{file_name}'. Treating as PDF.")
+                file_extension = '.pdf'
+                temp_file_name = f"{os.path.splitext(file_name)[0]}.pdf"
+        
         temp_dir = tempfile.gettempdir()
-        temp_file_path = os.path.join(temp_dir, file_name)
+        temp_file_path = os.path.join(temp_dir, temp_file_name)
+        
         try:
             # Write content to the temporary file
             with open(temp_file_path, 'wb') as temp_file:
@@ -104,7 +122,6 @@ class Parser:
                 try:
                     page_str = chunk.doc_id.split('_')[-1]
                     chunk.metadata = cloud_metadata
-                    
                     chunk.metadata['page_number'] = int(page_str) + 1
                 except (ValueError, IndexError):
                     print(f"Warning: Could not extract page number from doc_id: {chunk.doc_id}")
@@ -113,10 +130,17 @@ class Parser:
             print(f"Parsed {len(chunks)} chunks for document {file_name}")
             
             return chunks
+        except Exception as e:
+            print(f"Error parsing file '{file_name}' with type '{file_type}': {e}")
+            # Return an empty list instead of failing completely
+            return []
         finally:
             # Clean up the temporary file
             if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+                try:
+                    os.remove(temp_file_path)
+                except Exception as e:
+                    print(f"Warning: Could not remove temporary file {temp_file_path}: {e}")
 
 
 if __name__ == "__main__":
