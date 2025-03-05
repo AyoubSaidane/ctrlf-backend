@@ -2,4 +2,4 @@ __pycache__/
 connecter/__pycache__/
 venv/
 .env
-service-account.json
+connecter/service-account.json
