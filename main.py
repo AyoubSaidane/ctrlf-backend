@@ -1,4 +1,4 @@
-from connector.connector import GoogleDriveConnector
+from connecter.connecter import GoogleDriveConnecter
 from rag.parser import Parser
 from rag.indexer import Indexer
 from llama_index.llms.gemini import Gemini
@@ -35,13 +35,13 @@ async def connection_endpoint():
     counter = 0
     try:
         # connect to Google Drive and parse files
-        connector = GoogleDriveConnector(['pdf', 'pptx', 'docx'])
-        files = connector.list_files()
+        connecter = GoogleDriveConnecter(['pdf', 'pptx', 'docx'])
+        files = connecter.list_files()
         parser = Parser()
         global all_data
         all_data = []
         for file in files:
-            data = connector.get_file(files, file)
+            data = connecter.get_file(files, file)
             file_chunks = parser.parse_bytes_io(data)
             all_data.extend(file_chunks)
         global index

@@ -6,7 +6,7 @@
                 "mimeType",
                 "size", 
                 "parents",
-                "owners",
+                "lastModifyingUser",
                 "createdTime",
                 "modifiedTime",
                 "webViewLink",
@@ -25,7 +25,9 @@
             "jpg": "image/jpeg",
             "jpeg": "image/jpeg",
             "png": "image/png",
-            "gif": "image/gif"
+            "gif": "image/gif",
+            "gdoc": "application/vnd.google-apps.document",
+            "gslides": "application/vnd.google-apps.presentation"
         }
     }
 }
