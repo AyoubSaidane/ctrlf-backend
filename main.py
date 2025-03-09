@@ -2,8 +2,6 @@ from connecter.connecter import GoogleDriveConnecter
 from rag.parser import Parser
 from rag.indexer import Indexer
 from llama_index.llms.gemini import Gemini
-from rag.retriever import RouterQueryWorkflow
-from llama_index.core.query_engine import RetrieverQueryEngine
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import nest_asyncio
@@ -59,50 +57,98 @@ async def connection_endpoint():
 @app.post("/query", status_code=200)
 async def query_endpoint(query: Query):
     try:
-
         # retrieve the index and run the query
-        global counter
         global index
-        if counter == 0:
-            indexer = Indexer()
-            index = indexer.retrieve_index()
-
+        indexer = Indexer()
+        index = indexer.retrieve_index()
         
-            llm = Gemini(model = "models/gemini-2.0-flash")
+        # Step 1: Retrieve relevant documents using the retriever
+        retriever = index.as_retriever(similarity_top_k=20)
+        retrieved_nodes = retriever.retrieve(query.message)
+       
+        # Step 2: Format retrieved documents for the LLM
+        doc_texts = []
+        documents = []
+        experts_map = {} 
+        for retrieved_node in retrieved_nodes:
+            node = retrieved_node.node
+            score = retrieved_node.score
+            metadata = node.metadata
+            print(f"Retrieved document {metadata.get("file_name")}:{metadata.get("page_number")}, with score {score}")
+            text = node.text
+            doc_texts.append(text)
+            
+            doc = {
+                "title": metadata.get("file_name", "Untitled"),
+                "url": metadata.get("url", ""),
+                "page": metadata.get("page_number", "")
+            }
+            documents.append(doc)
+            
+            # Process experts and associate them with documents
+            expert_list = metadata.get("experts", [])
+            for expert in expert_list:
+                name = expert.get("name")
+                if name not in experts_map:
+                    # Create new expert entry with documents list
+                    experts_map[name] = {
+                        "name": name,
+                        "email": expert.get("email", ""),
+                        "image": expert.get("image", ""),
+                        "documents": [doc["title"]]
+                    }
+                else:
+                    # Add document to existing expert if not already there
+                    if doc["title"] not in experts_map[name]["documents"]:
+                        experts_map[name]["documents"].append(doc["title"])
 
-            doc_retriever = index.as_retriever(
-                retrieval_mode="files_via_content", 
-                files_top_k=5,
-            )
-            query_engine_doc = RetrieverQueryEngine.from_args(
-                doc_retriever, 
-                llm=llm, 
-                response_mode="tree_summarize",
-            )
-
-            chunk_retriever = index.as_retriever(
-                retrieval_mode="chunks", 
-                rerank_top_n=10,
-            )
-            query_engine_chunk = RetrieverQueryEngine.from_args(
-                chunk_retriever, 
-                llm=llm, 
-                response_mode="tree_summarize"
-            )
-            global router_query_workflow
-            router_query_workflow = RouterQueryWorkflow(
-                query_engines=[query_engine_doc, query_engine_chunk],
-                verbose=True,
-                llm=llm,
-                timeout=60
-            )
-            counter += 1
-        rag_response = await router_query_workflow.run(query_str=query.message)
-        print('RAG response:', rag_response)
-        return {"response": rag_response}
+        # Convert experts map to list
+        experts = list(experts_map.values())       
+        
+        context = "\n\n".join(doc_texts)
+        
+        # Step 3: Set up the LLM to generate a structured response
+        
+        llm = Gemini(model="models/gemini-2.0-flash")
+        
+        # Step 4: Create prompt for the LLM
+        prompt = f"""
+            You are a helpful assistant that provides accurate information based on provided documents.
+            
+            USER QUERY: {query.message}
+            
+            RETRIEVED DOCUMENTS:
+            {context}
+            
+            Using ONLY the information from the retrieved documents, provide a comprehensive answer to the query.
+            If the documents don't contain relevant information to answer the query, admit that you don't have enough information.
+            
+            Format your response as follows:
+            
+            [Your detailed answer to the query]
+        """
+        
+        # Step 5: Generate structured response
+        structured_response = llm.complete(prompt).text
+        print(f"Structured response: {structured_response}")
+        # Return formatted response
+        message = {
+            "response":{
+                "text": structured_response,
+                "documents": documents
+            }
+        }     
+        
+        return message
+    
     except Exception as e:
+        print(f"Error in query_endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="localhost", port=8000, reload=True)
