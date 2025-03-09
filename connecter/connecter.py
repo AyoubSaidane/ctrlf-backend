@@ -47,6 +47,7 @@ class GoogleDriveConnecter:
             return []
         
     def fetch_file_data(self, files, file):
+        print('Processing file:', file['name'])
         return {
             'content':self.get_file_content(file['id'],file['mimeType']),
             'metadata':{

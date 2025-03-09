@@ -98,6 +98,7 @@ async def query_endpoint(query: Query):
             )
             counter += 1
         rag_response = await router_query_workflow.run(query_str=query.message)
+        print('RAG response:', rag_response)
         return {"response": rag_response}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

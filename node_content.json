@@ -1,0 +1,71 @@
+{
+    "id_": "058fa572-32c4-4d8e-aa4e-9930d4e530a5",
+    "embedding": null,
+    "metadata": {
+      "file_id": "1idwNTuMkl2VEYIi_oZIeHP7ZmE-qOoJ8",
+      "file_type": "application/pdf",
+      "file_name": "PDF_002_Media_in_NYC_2012.pdf",
+      "file_path": "PDF_002_Media_in_NYC_2012.pdf",
+      "file_size": "1179110",
+      "creation_date": "2025-03-04T06:31:03.448Z",
+      "last_modified_date": "2025-02-14T22:56:05.000Z",
+      "experts": [
+        {
+          "name": "ayoub",
+          "image": "https://lh3.googleusercontent.com/a-/ALV-UjWHZ9jrjZVrqNbBZfFUnTMrgy7IRhFe9TV8HGiC_gHLe4-r=s64"
+        }
+      ],
+      "url": "https://drive.google.com/file/d/1idwNTuMkl2VEYIi_oZIeHP7ZmE-qOoJ8/view?usp=drivesdk",
+      "page_number": 32
+    },
+    "excluded_embed_metadata_keys": [
+      "file_name",
+      "file_type",
+      "file_size",
+      "creation_date",
+      "last_modified_date",
+      "last_accessed_date"
+    ],
+    "excluded_llm_metadata_keys": [
+      "file_name",
+      "file_type",
+      "file_size",
+      "creation_date",
+      "last_modified_date",
+      "last_accessed_date"
+    ],
+    "relationships": {
+      "1": {
+        "node_id": "/tmp/PDF_002_Media_in_NYC_2012.pdf_part_31",
+        "node_type": "4",
+        "metadata": {
+          "file_id": "1idwNTuMkl2VEYIi_oZIeHP7ZmE-qOoJ8",
+          "file_type": "application/pdf",
+          "file_name": "PDF_002_Media_in_NYC_2012.pdf",
+          "file_path": "PDF_002_Media_in_NYC_2012.pdf",
+          "file_size": "1179110",
+          "creation_date": "2025-03-04T06:31:03.448Z",
+          "last_modified_date": "2025-02-14T22:56:05.000Z",
+          "experts": [
+            {
+              "name": "ayoub",
+              "image": "https://lh3.googleusercontent.com/a-/ALV-UjWHZ9jrjZVrqNbBZfFUnTMrgy7IRhFe9TV8HGiC_gHLe4-r=s64"
+            }
+          ],
+          "url": "https://drive.google.com/file/d/1idwNTuMkl2VEYIi_oZIeHP7ZmE-qOoJ8/view?usp=drivesdk",
+          "page_number": 32
+        },
+        "hash": "3539b1f8f93abc872b8eab27642ac7ad1f28c1a4f63d4a229ffbf392720a94c6",
+        "class_name": "RelatedNodeInfo"
+      }
+    },
+    "metadata_template": "{key}: {value}",
+    "metadata_separator": "\n",
+    "text": "# Media leader interviews identify four main areas for development across subsectors\n\n| Development areas | Rationale for the city | Selected quotes from interviews |\n|---|---|---|\n| Sector promotion | Attract talent (especially engineers) Bring entrepreneurs and start-ups Attract large \"new media\" companies Increase general public awareness | \"The city should be marketing what companies are doing... Talk about all the cool things happening in the city\" |\n| Community engagement | Promote creation of multi-media content Increase collaboration between start-ups and traditional media Get leaders involved with city initiatives | \"The more community we have, the better\" \"Community engagement in the sector is very low\" |\n| Talent development | Capacitate traditional media employees Address need for professionals with technical and media knowledge Address need for software engineers | \"Engineering talent is really hard to find here - more broadly and especially with a focus on media development\" |\n| Infrastructure | Attract more start-ups to NYC Increase NYC connectivity Spread wealth throughout boroughs | \"The only area I have been critical of is infrastructure. We don't have good infrastructure here\" |",
+    "mimetype": "text/plain",
+    "start_char_idx": 0,
+    "end_char_idx": 1219,
+    "metadata_separator": "\n",
+    "text_template": "{metadata_str}\n\n{content}",
+    "class_name": "TextNode"
+  }

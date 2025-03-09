@@ -141,12 +141,12 @@ class RouterQueryWorkflow(Workflow):
 
         # query using corresponding query engine given in Answers list
         responses = []
-
+        print(f"Querying each engine for '{query_str}'")
         for answer in answers.answers:
             choice_idx = answer.choice - 1
             response = await self._query(query_str, choice_idx)
             responses.append(response)
-        
+        print(f"Querying each engine for '{query_str}' completed.")
         return SynthesizeAnswersEvent(responses=responses, query_str=query_str)
 
     @step()

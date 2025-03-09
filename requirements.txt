@@ -3,6 +3,7 @@ llama-cloud-services
 python-dotenv
 supabase
 llama-index-vector-stores-supabase
+llama-index-vector-stores-qdrant
 ipython
 llama-index.llms.gemini
 fastapi
