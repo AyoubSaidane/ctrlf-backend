@@ -4,6 +4,7 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from dotenv import load_dotenv
 import os
+from llama_index.core import Document
 
 class Indexer:
     def __init__(self):
@@ -38,6 +39,18 @@ class Indexer:
         print("✅ Documents successfully indexed and stored in Qdrant!")
         return index
     
+    def index_from_chunks(self, chunks):
+        documents = []
+        for chunk in chunks:
+            images_text = ", ".join(chunk["images"]) if isinstance(chunk["images"], list) else str(chunk["images"])
+            doc = Document(
+                text="text: "+ chunk["text"]+ " images: " +images_text+" summary: "+chunk["summary"],  # The main text content
+                metadata=chunk["metadata"],  # The metadata dictionary
+            )
+            documents.append(doc)
+        index = self.index_document(documents)
+        return index
+    
     def retrieve_index(self):
         # Retrieve the index from the storage context
         index = VectorStoreIndex.from_vector_store(
@@ -49,7 +62,7 @@ class Indexer:
 
 # Example usage:
 if __name__ == "__main__":
-    from rag.parser import Parser
+    from rag.llama_parser import Parser
     parser = Parser()
     indexer = Indexer()
     docs = parser.parse_document('PDF_002_Media_in_NYC_2012.pdf')

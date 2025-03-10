@@ -1,0 +1,51 @@
+{
+  "Document": {
+    "id_": "/tmp/Copie de PDF_006_-konsulentrapport-budgetanalyser-af-forsvaret-2017-.pdf_part_188",
+    "embedding": null,
+    "metadata": {
+      "file_id": "1iSDiJS3hSsJEjlzfvKU1-j7Or81kOy2U",
+      "file_type": "application/pdf",
+      "file_name": "Copie de PDF_006_-konsulentrapport-budgetanalyser-af-forsvaret-2017-.pdf",
+      "file_path": "Copie de PDF_006_-konsulentrapport-budgetanalyser-af-forsvaret-2017-.pdf",
+      "file_size": "3760591",
+      "creation_date": "2025-03-09T22:18:38.305Z",
+      "last_modified_date": "2025-03-09T22:18:38.305Z",
+      "experts": [
+        {
+          "name": "ayoub",
+          "image": "https://lh3.googleusercontent.com/a-/ALV-UjWHZ9jrjZVrqNbBZfFUnTMrgy7IRhFe9TV8HGiC_gHLe4-r=s64"
+        }
+      ],
+      "url": "https://drive.google.com/file/d/1iSDiJS3hSsJEjlzfvKU1-j7Or81kOy2U/view?usp=drivesdk",
+      "page_number": 189
+    },
+    "excluded_embed_metadata_keys": [
+      "file_name",
+      "file_type",
+      "file_size",
+      "creation_date",
+      "last_modified_date",
+      "last_accessed_date"
+    ],
+    "excluded_llm_metadata_keys": [
+      "file_name",
+      "file_type",
+      "file_size",
+      "creation_date",
+      "last_modified_date",
+      "last_accessed_date"
+    ],
+    "relationships": {},
+    "metadata_template": "{key}: {value}",
+    "metadata_separator": "\n",
+    "text_resource": {
+      "embeddings": null,
+      "data": null,
+      "text": "\n# Oversigt over materialesamlingen – Del 2 (2/3)\n\nEffektiviseringsforslag - Tværgående driftsydelser og administrative processer\n\n*   Ikke-IT-relaterede konsulentydelser\n\n    36. In-sourcing af gentagne konsulenter\n    s. 245 - 252\n*   Rejser\n\n    37. Øget anvendelse af VTC (dagsrejser)\n    s. 253 - 255\n\n    38. Optimeret planlægning og reduktion af seminarer (2-dagsrejser)\n    s. 256 - 258\n\n    39. Øget anvendelse af egne etablissementer\n    s. 259 - 285\n*   Ikke-militære varegrupper\n\n    40. Efterspørgselsstyring af kontorartikler\n    s. 286 - 292\n\n    41. Etablering af Public Service kanaler på forsvarets etablissementer\n    s. 293 - 298\n\n    42. Reduktion i aktiverede SIM-kort på lager\n    s. 299 - 301\n*   Administrative kurser\n\n    43. Reduktion i kursuslængder og antal deltagere\n    s. 302 - 320\n"
+      },
+    "image_resource": null,
+    "audio_resource": null,
+    "video_resource": null,
+    "text_template": "{metadata_str}\n\n{content}"
+  }
+}

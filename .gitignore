@@ -3,3 +3,6 @@ connecter/__pycache__/
 venv/
 .env
 connecter/service-account.json
+node_content.json
+documents_index.db
+documents_index.db-journal

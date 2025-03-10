@@ -1,11 +1,19 @@
 from connecter.connecter import GoogleDriveConnecter
-from rag.parser import Parser
+from rag.mistral_parser import MistralParser
 from rag.indexer import Indexer
 from llama_index.llms.gemini import Gemini
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import nest_asyncio
 from fastapi.middleware.cors import CORSMiddleware
+from llama_index.postprocessor.cohere_rerank import CohereRerank
+from llama_index.core.response.pprint_utils import pprint_response
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
+
+cohere_api_key = os.getenv("COHERE_API_KEY")
 
 # Apply nest_asyncio to allow nested async event loops
 nest_asyncio.apply()
@@ -32,25 +40,82 @@ async def connection_endpoint():
     global counter
     counter = 0
     try:
+        # Set up database connection
+        import sqlite3
+        from datetime import datetime
+        
+        # Create or connect to SQLite database
+        conn = sqlite3.connect('documents_index.db')
+        cursor = conn.cursor()
+        
+        # Create table if it doesn't exist
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS processed_documents (
+            document_id TEXT PRIMARY KEY,
+            file_name TEXT,
+            last_modified_date TEXT,
+            processed_date TEXT
+        )
+        ''')
+        conn.commit()
+        
         # connect to Google Drive and parse files
         connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
         files = connecter.list_files()
-        parser = Parser()
-        global all_data
-        all_data = []
-        for file in files:
-            data = connecter.fetch_file_data(files, file)
-            file_chunks = parser.parse_bytes_io(data)
-            all_data.extend(file_chunks)
-        global index
+        parser = MistralParser()
         indexer = Indexer()
-        index = indexer.index_document(all_data)
+        
+        files_processed = 0
+        files_skipped = 0
+        
+        for file in files:
+            file_id = file.get('id')
+            file_name = file.get('name')
+            last_modified = file.get('modifiedTime', '')
+            
+            # Check if file exists in database and is unchanged
+            cursor.execute(
+                "SELECT last_modified_date FROM processed_documents WHERE document_id = ?", 
+                (file_id,)
+            )
+            result = cursor.fetchone()
+            
+            # Process file if it's new or modified
+            if not result or result[0] != last_modified:
+                print(f"Processing file: {file_name} (new or modified)")
+                data = connecter.fetch_file_data(files, file)
+                file_chunks = parser.parse(data)
+                indexer.index_from_chunks(file_chunks)
+                
+                # Update or insert record in database
+                now = datetime.now().isoformat()
+                cursor.execute(
+                    '''INSERT OR REPLACE INTO processed_documents 
+                    (document_id, file_name, last_modified_date, processed_date) 
+                    VALUES (?, ?, ?, ?)''',
+                    (file_id, file_name, last_modified, now)
+                )
+                files_processed += 1
+            else:
+                print(f"Skipping file: {file_name} (unchanged)")
+                files_skipped += 1
+        
+        # Commit database changes
+        conn.commit()
+        conn.close()
+        
+        
         if not files:
             return {"message": "No files found."}
         else:
-            return {"message": "Successfully connected to Google Drive."}
+            return {
+                "message": f"Successfully connected to Google Drive. Processed {files_processed} new/modified files, skipped {files_skipped} unchanged files."
+            }
         
     except Exception as e:
+        print(f"Error in connection_endpoint: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
   
@@ -62,21 +127,23 @@ async def query_endpoint(query: Query):
         indexer = Indexer()
         index = indexer.retrieve_index()
         
-        # Step 1: Retrieve relevant documents using the retriever
-        retriever = index.as_retriever(similarity_top_k=20)
-        retrieved_nodes = retriever.retrieve(query.message)
-       
+        # Step 1: Retrieve relevant documents using the retriever with Cohere postprocessor
+        
+        cohere_rerank = CohereRerank(api_key=cohere_api_key, top_n=3)
+        query_engine = index.as_query_engine(
+            similarity_top_k=10,
+            node_postprocessors=[cohere_rerank],
+        )
+        response = query_engine.query(query.message)
+        retrieved_nodes = response.source_nodes
         # Step 2: Format retrieved documents for the LLM
-        doc_texts = []
         documents = []
         experts_map = {} 
         for retrieved_node in retrieved_nodes:
             node = retrieved_node.node
             score = retrieved_node.score
             metadata = node.metadata
-            print(f"Retrieved document {metadata.get("file_name")}:{metadata.get("page_number")}, with score {score}")
-            text = node.text
-            doc_texts.append(text)
+            print(f"Retrieved document {metadata.get("file_name")} page number:{metadata.get("page_number")}, with similarity {score}")
             
             doc = {
                 "title": metadata.get("file_name", "Untitled"),
@@ -104,41 +171,15 @@ async def query_endpoint(query: Query):
 
         # Convert experts map to list
         experts = list(experts_map.values())       
-        
-        context = "\n\n".join(doc_texts)
-        
-        # Step 3: Set up the LLM to generate a structured response
-        
-        llm = Gemini(model="models/gemini-2.0-flash")
-        
-        # Step 4: Create prompt for the LLM
-        prompt = f"""
-            You are a helpful assistant that provides accurate information based on provided documents.
-            
-            USER QUERY: {query.message}
-            
-            RETRIEVED DOCUMENTS:
-            {context}
-            
-            Using ONLY the information from the retrieved documents, provide a comprehensive answer to the query.
-            If the documents don't contain relevant information to answer the query, admit that you don't have enough information.
-            
-            Format your response as follows:
-            
-            [Your detailed answer to the query]
-        """
-        
-        # Step 5: Generate structured response
-        structured_response = llm.complete(prompt).text
-        print(f"Structured response: {structured_response}")
         # Return formatted response
+        print(response.response)
         message = {
             "response":{
-                "text": structured_response,
-                "documents": documents
+                "text": response.response,
+                "documents": documents,
+                "experts": experts
             }
         }     
-        
         return message
     
     except Exception as e:

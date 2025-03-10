@@ -5,7 +5,7 @@ import os
 import time
 import tempfile
 
-class Parser:
+class LlamaParser:
     def __init__(self):
         load_dotenv()
         self.llama_cloud_api_key = os.getenv("LLAMA_CLOUD_API_KEY")
@@ -17,8 +17,7 @@ class Parser:
             use_vendor_multimodal_model=True,
             vendor_multimodal_model_name="gemini-2.0-flash-001",
             system_prompt_append="give me an exhaustive description of every chart. Include everything: layout, text, images, graphs, etc. You also need to give me an explanation of the slide: what is the overall message that is conveyed.",
-            result_type="markdown",
-            
+            result_type="markdown",    
         )
     
     def parse_document(self, file_path):
@@ -144,14 +143,16 @@ class Parser:
 
 
 if __name__ == "__main__":
-    from connector.connector import GoogleDriveConnector
-    connector = GoogleDriveConnector(['pdf', 'pptx', 'docx'])
-    parser = Parser()
-    files = connector.list_files()
+    from connecter.connecter import GoogleDriveConnecter
+    connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
+    parser = LlamaParser()
+    files = connecter.list_files()
     if not files:
         print('No files found.')
     else:    
         for file in files:
-            data = connector.get_file(files, file)
+            data = connecter.fetch_file_data(files, file)
             chunks = parser.parse_bytes_io(data)
+            print(chunks)
             print(chunks[0].text[:500])
+            break
