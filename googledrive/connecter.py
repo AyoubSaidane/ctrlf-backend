@@ -5,20 +5,19 @@ import os, json, io
 
 
 class GoogleDriveConnecter:
-    def __init__(self, service_account_file,extensions=None):
+    def __init__(self, credentials_file,extensions=None):
         """Initialize the Google Drive connecter with read-only scope."""
-        self.SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
-        self.SERVICE_ACCOUNT_FILE = service_account_file
+        self.SERVICE_ACCOUNT_FILE = os.path.join(os.path.dirname(__file__), credentials_file)
         self.creds = service_account.Credentials.from_service_account_file(
-            self.SERVICE_ACCOUNT_FILE, scopes=self.SCOPES
+            self.SERVICE_ACCOUNT_FILE, scopes= ['https://www.googleapis.com/auth/drive.readonly']
         )
         self.service = build('drive', 'v3', credentials=self.creds)
-        self.config = self._load_config()
+        self.config = self._load_json("config.json")
         self.extensions = self._extension_map(extensions)
         self.fields = ",".join(self.config['drive_api']['fields']) 
 
-    def _load_config(self):
-        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    def _load_json(self, config_file):
+        config_path = os.path.join(os.path.dirname(__file__), config_file)
         with open(config_path, 'r') as f:
             return json.load(f)
     
@@ -27,24 +26,38 @@ class GoogleDriveConnecter:
             return None
         extension_map = self.config["drive_api"]["extension"]
         return [extension_map[ext] for ext in extensions if ext in extension_map]
-
+    
     def list_files(self):
         query = None
         if self.extensions:
             query = " or ".join(f"mimeType='{mime}'" for mime in self.extensions)
-            
+
+        files = []
+        page_token = None
+
         try:
-            results = self.service.files().list(
-                q=query,
-                fields=f"files({self.fields})",
-                supportsAllDrives=True,
-                includeItemsFromAllDrives=True
-            ).execute()
-            return results.get('files', [])
-        
+            while True:
+                results = self.service.files().list(
+                    q=query,
+                    fields=f"nextPageToken, files({self.fields})",
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True,
+                    pageToken=page_token
+                ).execute()
+
+                files.extend(results.get('files', []))
+                page_token = results.get('nextPageToken')
+
+                if not page_token:  # No more pages
+                    break
+
+            print(len(files), 'files found')
+            return files
+
         except Exception as e:
             print(f"Error listing files: {e}")
             return []
+
         
     def fetch_file_data(self, files, file):
         print('Processing file:', file['name'])
@@ -62,6 +75,51 @@ class GoogleDriveConnecter:
                 'url' : file['webViewLink']
             }
         }
+
+    # def get_file_content(self, file_id, mime_type):  # 50MB chunks
+    #     import time
+    #     start_time = time.time()
+        
+    #     try:
+    #         # Check if file is cached
+    #         cache_path = os.path.join('cache', file_id)
+    #         os.makedirs('cache', exist_ok=True)
+            
+    #         # Check if we have a recent cached version
+    #         if os.path.exists(cache_path):
+    #             file_stat = os.stat(cache_path)
+    #             # Use cache if file is less than 1 hour old
+    #             if (time.time() - file_stat.st_mtime) < 3600:  
+    #                 with open(cache_path, 'rb') as f:
+    #                     content = io.BytesIO(f.read())
+    #                     print(f"File loaded from cache in {time.time() - start_time:.2f} seconds")
+    #                     return content
+        
+    #         # Check if it's a Google native format
+    #         if mime_type.startswith('application/vnd.google-apps.'):
+    #             request = self.service.files().export(fileId=file_id, mimeType='application/pdf')
+    #         else:
+    #             request = self.service.files().get_media(fileId=file_id)
+            
+    #         file_content = io.BytesIO()
+    #         downloader = MediaIoBaseDownload(file_content, request)
+            
+    #         done = False
+    #         while not done:
+    #             _, done = downloader.next_chunk()
+                
+    #         file_content.seek(0)
+            
+    #         # Cache the downloaded file
+    #         with open(cache_path, 'wb') as f:
+    #             f.write(file_content.getvalue())
+                
+    #         print(f"File downloaded in {time.time() - start_time:.2f} seconds")
+    #         return file_content
+            
+    #     except Exception as e:
+    #         print(f"Error downloading file {file_id}: {str(e)}")
+    #         raise
 
     def get_file_content(self, file_id, mime_type):
         # Check if it's a Google native format
@@ -122,10 +180,11 @@ class GoogleDriveConnecter:
 
 if __name__ == '__main__':
     """Example usage of the GoogleDriveConnecter."""
-    connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
+    connecter = GoogleDriveConnecter(credentials_file = 'service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
     files = connecter.list_files()
     if not files:
         print('No files found.')
     else:    
         for file in files:
             print(connecter.fetch_file_data(files, file))
+            break

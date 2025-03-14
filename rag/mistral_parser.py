@@ -12,7 +12,7 @@ load_dotenv()
 import fitz
 import tempfile
 from mistralai import Mistral
-from connecter.connecter import GoogleDriveConnecter
+from googledrive.connecter import GoogleDriveConnecter
 from tqdm import tqdm 
 
 class MistralParser:
@@ -47,22 +47,28 @@ class MistralParser:
                 images = [image]
 
             image_prompt = """
-                You are an expert consultant analyzing business documents.
 
-                Start by giving me a high-level description of the image. Then:
+                You are a document analysis assistant helping me understand content from images I upload.
 
-                If the image contains a table or text:
-                Do OCR on it. Output the table in markdown.
+                Start by giving me a high-level description of the image. Provide a factual description of the visible elements in the image, focusing on:
 
-                If the image contains a logo:
-                Give the name of the company.
+                For text content:
+                - Transcribe the visible text only, formatted in markdown
+                - For tables, maintain the structure using markdown table format
 
-                If the image contains a chart, graph, or data visualization:
-                Start by giving a brief summary: chart type (bar chart, line graph, pie chart, scatter plot, etc.), key metrics, values, and trends shown , time period or categories being compared, summary of main insights. Then, do OCR on it and output in markdown.
+                For visual elements:
+                - Describe any charts/graphs by type (bar, line, pie, etc.) and key data points shown
+                - Note visible logos without making assumptions about brand ownership
+                - Describe diagrams, illustrations, or other visual elements objectively
 
-                For anything that does not fit within the above categories, give a more detailed description.
+                Guidelines:
+                - Only describe what is clearly visible in the image
+                - Do not interpret, analyze, or draw conclusions beyond what's explicitly shown
+                - Avoid making claims about copyright, ownership, or authorship
+                - Provide factual transcription without judgment or commentary
+                - If text is partially visible or unclear, indicate this with [unclear] or similar notation
 
-                Only use information from the image: do not hallucinate, do not infer anything, do not generate conclusions not clearly stated in the image.
+                Here is the image:
             """
 
             chunks = []
@@ -129,16 +135,28 @@ class MistralParser:
 
 
 if __name__ == "__main__":
-    from connecter.connecter import GoogleDriveConnecter
+    # from googledrive.connecter import GoogleDriveConnecter
+    # from rag.indexer import Indexer
+    # indexer = Indexer()
+    # connecter = GoogleDriveConnecter(credentials_file = 'service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
+    # parser = MistralParser()
+    # files = connecter.list_files()
+    # for file in files:
+    #     data = connecter.fetch_file_data(files, file)
+    #     chunks = parser.parse(data)
+    #     indexer.index_from_chunks(chunks)
+
+    from sharepoint.connecter import SharePointConnecter
     from rag.indexer import Indexer
     indexer = Indexer()
-    connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
+    connecter = SharePointConnecter(credentials_file = 'credentials.json', extensions = ['pdf', 'pptx', 'docx'])
     parser = MistralParser()
     files = connecter.list_files()
     for file in files:
         data = connecter.fetch_file_data(files, file)
         chunks = parser.parse(data)
-        indexer.index_from_chunks(chunks)
+        print(chunks)
+        break
 
 
 # {

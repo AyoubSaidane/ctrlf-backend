@@ -117,8 +117,8 @@ class GeminiParser:
             return None
 
 if __name__ == "__main__":
-    from connecter.connecter import GoogleDriveConnecter
-    connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
+    from googledrive.connecter import GoogleDriveConnecter
+    connecter = GoogleDriveConnecter(credentials_file = 'service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
     parser = GeminiParser()
     files = connecter.list_files()
     for file in files:

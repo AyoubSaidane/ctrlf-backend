@@ -1,4 +1,4 @@
-from connecter.connecter import GoogleDriveConnecter
+from googledrive.connecter import GoogleDriveConnecter
 from rag.mistral_parser import MistralParser
 from rag.indexer import Indexer
 from llama_index.llms.gemini import Gemini
@@ -9,7 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from llama_index.postprocessor.cohere_rerank import CohereRerank
 from llama_index.core.response.pprint_utils import pprint_response
 from dotenv import load_dotenv
+import base64
 import os
+import time
 load_dotenv()
 
 
@@ -20,9 +22,8 @@ nest_asyncio.apply()
 
 class Query(BaseModel):
     message: str
-counter = 0  
-print(counter)
-app = FastAPI(title="CtrlF API")
+
+app = FastAPI(title="Probe API")
 
 # Add this near the top of your file after creating the FastAPI app
 app.add_middleware(
@@ -37,15 +38,13 @@ app.add_middleware(
 
 @app.get("/connect", status_code=200)
 async def connection_endpoint():
-    global counter
-    counter = 0
     try:
         # Set up database connection
         import sqlite3
         from datetime import datetime
         
         # Create or connect to SQLite database
-        conn = sqlite3.connect('documents_index.db')
+        conn = sqlite3.connect(f"{os.getenv("COLLECTION_NAME")}.db")
         cursor = conn.cursor()
         
         # Create table if it doesn't exist
@@ -60,7 +59,7 @@ async def connection_endpoint():
         conn.commit()
         
         # connect to Google Drive and parse files
-        connecter = GoogleDriveConnecter(service_account_file = 'connecter/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
+        connecter = GoogleDriveConnecter(credentials_file = 'googledrive/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
         files = connecter.list_files()
         parser = MistralParser()
         indexer = Indexer()
@@ -95,6 +94,7 @@ async def connection_endpoint():
                     VALUES (?, ?, ?, ?)''',
                     (file_id, file_name, last_modified, now)
                 )
+                conn.commit()
                 files_processed += 1
             else:
                 print(f"Skipping file: {file_name} (unchanged)")
@@ -108,6 +108,7 @@ async def connection_endpoint():
         if not files:
             return {"message": "No files found."}
         else:
+            print(f"Processed {files_processed} new/modified files, skipped {files_skipped} unchanged files.")
             return {
                 "message": f"Successfully connected to Google Drive. Processed {files_processed} new/modified files, skipped {files_skipped} unchanged files."
             }
@@ -122,21 +123,29 @@ async def connection_endpoint():
 @app.post("/query", status_code=200)
 async def query_endpoint(query: Query):
     try:
-        # retrieve the index and run the query
+        # Step 0: Connect to Google Drive and retrieve index
+        connect_start_time = time.time()
+        connecter = GoogleDriveConnecter(credentials_file = 'googledrive/service-account.json', extensions = ['pdf', 'pptx', 'docx','gdoc','gslides'])
         global index
         indexer = Indexer()
         index = indexer.retrieve_index()
+        connect_end_time = time.time()
+        print(f"Index retrieval took {connect_end_time - connect_start_time:.2f} seconds")
         
         # Step 1: Retrieve relevant documents using the retriever with Cohere postprocessor
-        
+        query_start_time = time.time()
         cohere_rerank = CohereRerank(api_key=cohere_api_key, top_n=3)
         query_engine = index.as_query_engine(
             similarity_top_k=10,
             node_postprocessors=[cohere_rerank],
         )
         response = query_engine.query(query.message)
-        retrieved_nodes = response.source_nodes
+        query_end_time = time.time()
+        print(f"Query execution took {query_end_time - query_start_time:.2f} seconds")
+    
         # Step 2: Format retrieved documents for the LLM
+        format_start_time = time.time()
+        retrieved_nodes = response.source_nodes
         documents = []
         experts_map = {} 
         for retrieved_node in retrieved_nodes:
@@ -148,7 +157,8 @@ async def query_endpoint(query: Query):
             doc = {
                 "title": metadata.get("file_name", "Untitled"),
                 "url": metadata.get("url", ""),
-                "page": metadata.get("page_number", "")
+                "page": metadata.get("page_number", ""),
+                "array_buffer": base64.b64encode(connecter.get_file_content(metadata.get("file_id"), metadata.get("file_type")).getvalue()).decode('ascii'),
             }
             documents.append(doc)
             
@@ -179,7 +189,9 @@ async def query_endpoint(query: Query):
                 "documents": documents,
                 "experts": experts
             }
-        }     
+        }  
+        format_end_time = time.time()
+        print(f"Format response took {format_end_time - format_start_time:.2f} seconds")   
         return message
     
     except Exception as e:

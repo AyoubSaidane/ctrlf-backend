@@ -1,8 +1,12 @@
 __pycache__/
-connecter/__pycache__/
+googledrive/__pycache__/
 venv/
 .env
-connecter/service-account.json
+googledrive/service-account.json
 node_content.json
-documents_index.db
-documents_index.db-journal
+demo_collection.db
+
+# SharePoint Credentials
+sharepoint/credentials.json
+sharepoint/__pycache__/
+cache/
